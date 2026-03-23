@@ -1,1 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Buckets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
 
+    body {
+      background: #f9fafc;
+      font-family: 'Quicksand', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .game-container {
+      position: relative;
+      max-width: 1000px;
+      width: 100%;
+      background: #ffffffd9;
+      backdrop-filter: blur(2px);
+      border-radius: 48px 48px 32px 32px;
+      box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.1), 0 10px 15px -5px rgba(0, 0, 0, 0.05);
+      padding: 32px 24px 40px 24px;
+      border: 2px solid #ffffff;
+      z-index: 1;
+    }
+
+    .refresh-icon {
+      position: absolute;
+      top: 32px;
+      right: 32px;
+      background: #f5efe8;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.4s ease, background 0.2s;
+      z-index: 10;
+    }
+
+    .refresh-icon:hover {
+      background: #ffe8d4;
+      transform: rotate(90deg);
+    }
+
+    .refresh-icon:active {
+      transform: rotate(180deg) scale(0.95);
+    }
+
+    h3 {
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: #3b3a4b;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 0 #f0ede8;
+    }
+
+    .buckets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .bucket {
+      flex: 1 1 260px;
+      max-width: 300px;
+      background: #fef7e9;
+      border-radius: 40px 40px 30px 30px;
+      padding: 20px 12px 20px 12px;
+      box-shadow: 0 15px 0 rgba(0, 0, 0, 0.03), inset 0 -3px 0 rgba(0,0,0,0.05);
+      transition: transform 0.1s ease, box-shadow 0.2s;
+      border: 3px solid white;
+    }
+
+    .odd-bucket {
+      background: #ffe8d4; 
+    }
+
+    .even-bucket {
+      background: #d4e8ff; 
+    }
+
+    .bucket h2 {
+      text-align: center;
+      font-weight: 700;
+      font-size: 2rem;
+      color: #4a4a5e;
+      margin-top: -8px;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 0 white;
+    }
+
+    .bucket-inner {
+      min-height: 130px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 32px;
+      padding: 16px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+    }
+
+    .number-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: white;
+      border-radius: 50%;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #2d4059;
+      box-shadow: 0 6px 0 #c0b7b0, 0 8px 12px rgba(0,0,0,0.1);
+      transition: all 0.1s;
+      border: 2px solid #faf7f2;
+    }
+
+    .numbers-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 18px;
+      background: #f5efe8;
+      padding: 36px 20px;
+      border-radius: 80px 80px 40px 40px;
+      margin: 20px 0 0 0;
+      box-shadow: inset 0 -5px 0 #ddd6cc, 0 12px 18px -14px rgba(0,0,0,0.2);
+      min-height: 147px; /* Maintains height when empty to prevent layout jump */
+      align-items: center;
+    }
+
+    .number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 75px;
+      height: 75px;
+      background: #feeac2; 
+      border-radius: 50%;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #3a2e28;
+      cursor: grab;
+      transition: 0.2s;
+      box-shadow: 0 10px 0 #dbb78c, 0 8px 18px rgba(160, 130, 100, 0.25);
+      border: 3px solid white;
+      touch-action: none; 
+      will-change: transform;
+    }
+
+    .number:active {
+      cursor: grabbing;
+      transform: scale(0.97);
+      box-shadow: 0 5px 0 #dbb78c, 0 8px 18px rgba(160, 130, 100, 0.25);
+    }
+
+    .dragging-original {
+      opacity: 0.3 !important;
+      transition: opacity 0.1s;
+      pointer-events: none;
+    }
+
+    .clone-dragging {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      filter: drop-shadow(0 12px 12px rgba(0,0,0,0.25));
+      transform: scale(1.02) rotate(1deg);
+      opacity: 0.9;
+      transition: none;
+      margin: 0;
+    }
+
+    .play-again-btn {
+      background: #84dcc6;
+      border: 3px solid white;
+      border-radius: 40px;
+      padding: 16px 40px;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #2d4059;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #55b299, 0 12px 18px rgba(0,0,0,0.15);
+      transition: all 0.1s;
+      font-family: inherit;
+    }
+
+    .play-again-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 2px 0 #55b299, 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    @keyframes gentleShake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+      100% { transform: translateX(0); }
+    }
+
+    .shake-animation {
+      animation: gentleShake 0.4s ease-in-out;
+    }
+
+    .bucket.shake-animation {
+      box-shadow: 0 0 0 4px #ff6b6b, 0 15px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    @keyframes happyPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.12); background-color: #fff3cf; }
+      100% { transform: scale(1); }
+    }
+
+    .pop-animation {
+      animation: happyPop 0.25s ease-out;
+    }
+
+    .bucket.pop-animation {
+      box-shadow: 0 0 0 4px #9ce96c, 0 15px 0 rgba(0, 0, 0, 0.03);
+    }
+
+    @media (max-width: 600px) {
+      .game-container { padding: 48px 12px 20px 12px; }
+      .refresh-icon { top: 16px; right: 16px; width: 40px; height: 40px; }
+      .number { width: 60px; height: 60px; font-size: 1.8rem; }
+      .bucket h2 { font-size: 1.8rem; }
+      .play-again-btn { font-size: 1.5rem; padding: 12px 30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <button id="refreshIcon" class="refresh-icon" aria-label="Refresh">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3a4b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+      </svg>
+    </button>
+
+    <h3>🧸 Sort the numbers 🧸</h3>
+
+    <div class="buckets">
+      <div class="bucket odd-bucket" id="oddBucket">
+        <h2>⚡ ODD</h2>
+        <div class="bucket-inner" id="oddBucketInner"></div>
+      </div>
+      <div class="bucket even-bucket" id="evenBucket">
+        <h2>🌸 EVEN</h2>
+        <div class="bucket-inner" id="evenBucketInner"></div>
+      </div>
+    </div>
+
+    <div class="numbers-container" id="numbersContainer"></div>
+  </div>
+
+  <script>
+    (function() {
+      const numbersContainer = document.getElementById('numbersContainer');
+      const oddBucket = document.getElementById('oddBucket');
+      const evenBucket = document.getElementById('evenBucket');
+      const oddInner = document.getElementById('oddBucketInner');
+      const evenInner = document.getElementById('evenBucketInner');
+      const refreshIcon = document.getElementById('refreshIcon');
+
+      let activeDrag = false;
+      let clone = null;                
+      let originalNumber = null;       
+      let offsetX = 0, offsetY = 0;    
+      let numberValue = null;           
+
+      // Audio element for clapping sound
+      const clapSound = new Audio('https://assets.mixkit.co/active_storage/sfx/437/437-preview.mp3');
+      clapSound.volume = 0.5;
+
+      function triggerCelebration() {
+        // Play audio
+        clapSound.currentTime = 0;
+        clapSound.play().catch(e => console.log("Audio playback requires user interaction:", e));
+
+        // Trigger continuous confetti bursts
+        const duration = 5000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+        function randomInRange(min, max) {
+          return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 50 * (timeLeft / duration);
+          
+          confetti(Object.assign({}, defaults, { 
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+          }));
+          confetti(Object.assign({}, defaults, { 
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+          }));
+        }, 250);
+      }
+
+      function resetGame() {
+        oddInner.innerHTML = '';
+        evenInner.innerHTML = '';
+
+        numbersContainer.innerHTML = '';
+        
+        // Generate 9 random numbers between 1 and 100
+        for (let i = 0; i < 9; i++) {
+          const randomNum = Math.floor(Math.random() * 100) + 1;
+          const numEl = document.createElement('span');
+          numEl.classList.add('number');
+          numEl.dataset.value = randomNum;
+          numEl.textContent = randomNum;
+          numbersContainer.appendChild(numEl);
+        }
+      }
+
+      function cleanupDrag() {
+        if (clone) {
+          clone.remove();
+          clone = null;
+        }
+        if (originalNumber) {
+          originalNumber.classList.remove('dragging-original');
+          originalNumber = null;
+        }
+
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', onDragEnd);
+        window.removeEventListener('pointercancel', onDragCancel);
+
+        activeDrag = false;
+        numberValue = null;
+      }
+
+      function onDragMove(e) {
+        if (!activeDrag || !clone) return;
+        e.preventDefault(); 
+
+        clone.style.left = (e.clientX - offsetX) + 'px';
+        clone.style.top = (e.clientY - offsetY) + 'px';
+      }
+
+      function onDragEnd(e) {
+        if (!activeDrag) return;
+        e.preventDefault();
+
+        const cloneRect = clone.getBoundingClientRect();
+        const centerX = cloneRect.left + cloneRect.width / 2;
+        const centerY = cloneRect.top + cloneRect.height / 2;
+
+        const oddRect = oddBucket.getBoundingClientRect();
+        const evenRect = evenBucket.getBoundingClientRect();
+
+        let targetBucket = null; 
+
+        if (centerX >= oddRect.left && centerX <= oddRect.right &&
+            centerY >= oddRect.top && centerY <= oddRect.bottom) {
+          targetBucket = 'odd';
+        } else if (centerX >= evenRect.left && centerX <= evenRect.right &&
+                   centerY >= evenRect.top && centerY <= evenRect.bottom) {
+          targetBucket = 'even';
+        }
+
+        if (targetBucket) {
+          const isEven = (numberValue % 2 === 0);
+
+          if ((targetBucket === 'odd' && !isEven) || (targetBucket === 'even' && isEven)) {
+            if (originalNumber) {
+              originalNumber.remove();
+              originalNumber = null; 
+            }
+
+            const chip = document.createElement('span');
+            chip.classList.add('number-chip');
+            chip.textContent = numberValue;
+
+            if (targetBucket === 'odd') {
+              oddInner.appendChild(chip);
+              oddBucket.classList.add('pop-animation');
+              setTimeout(() => oddBucket.classList.remove('pop-animation'), 300);
+            } else {
+              evenInner.appendChild(chip);
+              evenBucket.classList.add('pop-animation');
+              setTimeout(() => evenBucket.classList.remove('pop-animation'), 300);
+            }
+
+            // Check if game is complete
+            if (numbersContainer.children.length === 0) {
+              triggerCelebration();
+              const playAgainBtn = document.createElement('button');
+              playAgainBtn.classList.add('play-again-btn');
+              playAgainBtn.textContent = 'Play Again! 🎮';
+              playAgainBtn.onclick = resetGame;
+              numbersContainer.appendChild(playAgainBtn);
+            }
+
+          } else {
+            if (targetBucket === 'odd') {
+              oddBucket.classList.add('shake-animation');
+              setTimeout(() => oddBucket.classList.remove('shake-animation'), 500);
+            } else {
+              evenBucket.classList.add('shake-animation');
+              setTimeout(() => evenBucket.classList.remove('shake-animation'), 500);
+            }
+          }
+        }
+
+        cleanupDrag();
+      }
+
+      function onDragCancel(e) {
+        cleanupDrag();
+      }
+
+      function startDrag(e) {
+        if (activeDrag) return;
+
+        const numberEl = e.target.closest('.number');
+        if (!numberEl) return; 
+
+        e.preventDefault(); 
+
+        const val = parseInt(numberEl.dataset.value, 10);
+        if (isNaN(val)) return;
+
+        activeDrag = true;
+        originalNumber = numberEl;
+        numberValue = val;
+
+        const rect = numberEl.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        clone = numberEl.cloneNode(true);
+        clone.classList.add('clone-dragging');
+        clone.classList.remove('dragging-original'); 
+        clone.style.position = 'fixed'; 
+        clone.style.left = (e.clientX - offsetX) + 'px';
+        clone.style.top = (e.clientY - offsetY) + 'px';
+        clone.style.width = rect.width + 'px';
+        clone.style.height = rect.height + 'px';
+        clone.style.margin = '0';
+        document.body.appendChild(clone);
+
+        originalNumber.classList.add('dragging-original');
+
+        window.addEventListener('pointermove', onDragMove);
+        window.addEventListener('pointerup', onDragEnd);
+        window.addEventListener('pointercancel', onDragCancel);
+      }
+
+      numbersContainer.addEventListener('pointerdown', startDrag);
+
+      refreshIcon.addEventListener('click', () => {
+        if (activeDrag) {
+          cleanupDrag();
+        }
+        resetGame();
+      });
+
+      resetGame();
+
+      window.addEventListener('dragstart', (e) => e.preventDefault());
+    })();
+  </script>
+</body>
+</html>
